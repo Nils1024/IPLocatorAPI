@@ -1,3 +1,6 @@
+from psycopg2 import sql
+
+import csv
 import psycopg2
 import os
 
@@ -14,6 +17,105 @@ def reset_schema(db_conn):
     with db_conn.cursor() as cur:
         cur.execute("DROP SCHEMA public CASCADE;")
         cur.execute("CREATE SCHEMA public;")
+
+    db_conn.commit()
+
+def create_schema(db_conn):
+    with db_conn.cursor() as cur:
+        # GeoLite2 ASN
+        with open("./sql/create_networks_table.sql", "r", encoding="utf-8") as f:
+            sql = f.read()
+            cur.execute(sql)
+
+        # GeoLite2 City
+        with open("./sql/create_geolocation_table.sql", "r", encoding="utf-8") as f:
+            sql = f.read()
+            cur.execute(sql)
+
+        with open("./sql/create_rdap_networks_table.sql", "r", encoding="utf-8") as f:
+            sql = f.read()
+            cur.execute(sql)
+
+        with open("./sql/create_rdap_domains_table.sql", "r", encoding="utf-8") as f:
+            sql = f.read()
+            cur.execute(sql)
+
+    db_conn.commit()
+
+def import_networks(db_conn):
+    with open("./sql/insert_into_network.sql", "r", encoding="utf-8") as sql_file:
+        sql = sql_file.read()
+
+        with db_conn.cursor() as cur:
+            with open("./csv/GeoLite2-ASN-Blocks-IPv4.csv", "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+
+                rows = [
+                    (row["network"],
+                     row["autonomous_system_number"],
+                     row["autonomous_system_organization"])
+                    for row in reader
+                ]
+
+                cur.executemany(sql, rows)
+
+            with open("./csv/GeoLite2-ASN-Blocks-IPv6.csv", "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+
+                rows = [
+                    (row["network"],
+                     row["autonomous_system_number"],
+                     row["autonomous_system_organization"])
+                    for row in reader
+                ]
+
+                cur.executemany(sql, rows)
+
+def import_geolocation(db_conn):
+    with open("./sql/insert_into_geolocation.sql", "r", encoding="utf-8") as sql_file:
+        sql = sql_file.read()
+
+        with db_conn.cursor() as cur:
+            locations = {}
+
+            with open("./csv/GeoLite2-City-Locations-en.csv", "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    locations[row["geoname_id"]] = row
+
+            def load_blocks(file_path):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+
+                    rows = []
+
+                    for row in reader:
+                        geo_id = row.get("geoname_id")
+                        loc = locations.get(geo_id)
+
+                        if not loc:
+                            continue
+
+                        rows.append((
+                            row["network"],
+                            loc.get("country_iso_code"),
+                            loc.get("city_name"),
+                            loc.get("latitude") or None,
+                            loc.get("longitude") or None
+                        ))
+
+                    cur.executemany(sql, rows)
+
+            load_blocks("./csv/GeoLite2-City-Blocks-IPv4.csv")
+            load_blocks("./csv/GeoLite2-City-Blocks-IPv6.csv")
+
+def import_geolite2(db_conn):
+    import_networks(db_conn)
+    print("Networks imported successfully")
+
+    import_geolocation(db_conn)
+    print("Geolocation imported successfully")
+
     db_conn.commit()
 
 host = os.getenv("IPLocatorAPI_DB_URL")
@@ -24,6 +126,13 @@ conn = connect(host,
                user,
                os.getenv("IPLocatorAPI_DB_PASSWD"))
 print("Connected to <%s> with user <%s>" % (host, user))
+
 reset_schema(conn)
 print("Schema reset successful")
+
+create_schema(conn)
+print("Schema created successfully")
+
+import_geolite2(conn)
+
 conn.close()
