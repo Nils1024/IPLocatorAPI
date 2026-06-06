@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+/scripts/csv/GeoLite2-ASN-Blocks-IPv4.csv
+/scripts/csv/GeoLite2-ASN-Blocks-IPv6.csv
+/scripts/csv/GeoLite2-City-Blocks-IPv4.csv
+/scripts/csv/GeoLite2-City-Blocks-IPv6.csv
+/scripts/csv/GeoLite2-City-Locations-en.csv
