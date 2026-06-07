@@ -1,4 +1,5 @@
 package de.nils.iplocatorapi.repository;
 
-public abstract class RepoBase {
+interface RepoBase<V> {
+    void create(V dao);
 }
