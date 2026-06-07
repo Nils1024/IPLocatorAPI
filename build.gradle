@@ -24,6 +24,15 @@ dependencies {
     providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat-runtime'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Source: https://mvnrepository.com/artifact/org.postgresql/postgresql
+    implementation 'org.postgresql:postgresql:42.7.11'
+
+    // Source: https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation 'org.slf4j:slf4j-api:2.0.18'
+
+    // Source: https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+    testImplementation 'org.slf4j:slf4j-simple:2.0.18'
 }
 
 tasks.named('test') {
