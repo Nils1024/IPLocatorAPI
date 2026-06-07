@@ -1,4 +1,4 @@
-from psycopg2 import sql
+from psycopg2.extras import execute_values
 
 import csv
 import psycopg2
@@ -57,7 +57,7 @@ def import_networks(db_conn):
                     for row in reader
                 ]
 
-                cur.executemany(sql, rows)
+                execute_values(cur, sql, rows, page_size=5000)
 
             with open("./csv/GeoLite2-ASN-Blocks-IPv6.csv", "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
@@ -69,7 +69,7 @@ def import_networks(db_conn):
                     for row in reader
                 ]
 
-                cur.executemany(sql, rows)
+                execute_values(cur, sql, rows, page_size=5000)
 
 def import_geolocation(db_conn):
     with open("./sql/insert_into_geolocation.sql", "r", encoding="utf-8") as sql_file:
@@ -104,7 +104,7 @@ def import_geolocation(db_conn):
                             loc.get("longitude") or None
                         ))
 
-                    cur.executemany(sql, rows)
+                    execute_values(cur, sql, rows, page_size=5000)
 
             load_blocks("./csv/GeoLite2-City-Blocks-IPv4.csv")
             load_blocks("./csv/GeoLite2-City-Blocks-IPv6.csv")
