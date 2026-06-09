@@ -119,13 +119,14 @@ def import_geolite2(db_conn):
     db_conn.commit()
 
 host = os.getenv("IPLocatorAPI_DB_URL")
+database = os.getenv("IPLocatorAPI_DB_NAME")
 user = os.getenv("IPLocatorAPI_DB_USER")
-print("Connecting to <%s> with user <%s>" % (host, user))
+print("Connecting to <%s>/<%s> with user <%s>" % (host, database, user))
 conn = connect(host,
-               "iplocatorapi_db",
+               database,
                user,
                os.getenv("IPLocatorAPI_DB_PASSWD"))
-print("Connected to <%s> with user <%s>" % (host, user))
+print("Connected to <%s>/<%s> with user <%s>" % (host, database, user))
 
 reset_schema(conn)
 print("Schema reset successful")
