@@ -24,7 +24,7 @@ public class DataService {
         try(PreparedStatement statement = dbConnection.getConnection().prepareStatement("""
                 SELECT network, asn, organization
                 FROM networks
-                WHERE inet ?::inet <<= network
+                WHERE ?::inet <<= network
                 LIMIT 1;
             """)) {
 

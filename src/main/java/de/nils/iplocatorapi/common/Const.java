@@ -7,6 +7,6 @@ public class Const {
     public static final String version = "v1";
 
     public static class SQL {
-        public static final String url = "jdbc:postgresql://" + System.getenv("IPLocatorAPI_DB_URL") + ":5432";
+        public static final String url = "jdbc:postgresql://" + System.getenv("IPLocatorAPI_DB_URL") + ":5432/" + System.getenv("IPLocatorAPI_DB_NAME");
     }
 }
