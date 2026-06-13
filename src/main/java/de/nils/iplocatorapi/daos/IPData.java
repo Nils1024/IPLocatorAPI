@@ -9,6 +9,24 @@ public class IPData {
     private String city;
     private double latitude;
     private double longitude;
+    private String abuseEmail;
+    private String registry;
+
+    public String getAbuseEmail() {
+        return abuseEmail;
+    }
+
+    public void setAbuseEmail(String abuseEmail) {
+        this.abuseEmail = abuseEmail;
+    }
+
+    public String getRegistry() {
+        return registry;
+    }
+
+    public void setRegistry(String registry) {
+        this.registry = registry;
+    }
 
     public String getIp() {
         return ip;
