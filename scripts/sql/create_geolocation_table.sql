@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS geolocation (
+CREATE TABLE IF NOT EXISTS geolocations (
     geoname_id INTEGER PRIMARY KEY,
     continent_code CHAR(2),
     country_code CHAR(2),

@@ -22,23 +22,18 @@ def reset_schema(db_conn):
 
 def create_schema(db_conn):
     with db_conn.cursor() as cur:
-        # GeoLite2 ASN
-        with open("./sql/create_networks_table.sql", "r", encoding="utf-8") as f:
-            sql = f.read()
-            cur.execute(sql)
+        scripts = [
+            "./sql/create_networks_table.sql",
+            "./sql/create_geolocation_table.sql",
+            "./sql/create_rdap_networks_table.sql",
+            "./sql/create_rdap_domains_table.sql",
+            "./sql/create_tld_table.sql"
+        ]
 
-        # GeoLite2 City
-        with open("./sql/create_geolocation_table.sql", "r", encoding="utf-8") as f:
-            sql = f.read()
-            cur.execute(sql)
-
-        with open("./sql/create_rdap_networks_table.sql", "r", encoding="utf-8") as f:
-            sql = f.read()
-            cur.execute(sql)
-
-        with open("./sql/create_rdap_domains_table.sql", "r", encoding="utf-8") as f:
-            sql = f.read()
-            cur.execute(sql)
+        for script in scripts:
+            with open(script, "r", encoding="utf-8") as f:
+                sql = f.read()
+                cur.execute(sql)
 
     db_conn.commit()
 
@@ -76,38 +71,20 @@ def import_geolocation(db_conn):
         sql = sql_file.read()
 
         with db_conn.cursor() as cur:
-            locations = {}
-
             with open("./csv/GeoLite2-City-Locations-en.csv", "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
+                rows = []
                 for row in reader:
-                    locations[row["geoname_id"]] = row
+                    rows.append((
+                        int(row["geoname_id"]),
+                        row.get("continent_code") or None,
+                        row.get("country_iso_code") or None,
+                        row.get("subdivision_1_name") or None,
+                        row.get("city_name") or None,
+                        row.get("timezone") or None
+                    ))
 
-            def load_blocks(file_path):
-                with open(file_path, "r", encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-
-                    rows = []
-
-                    for row in reader:
-                        geo_id = row.get("geoname_id")
-                        loc = locations.get(geo_id)
-
-                        if not loc:
-                            continue
-
-                        rows.append((
-                            row["network"],
-                            loc.get("country_iso_code"),
-                            loc.get("city_name"),
-                            loc.get("latitude") or None,
-                            loc.get("longitude") or None
-                        ))
-
-                    execute_values(cur, sql, rows, page_size=5000)
-
-            load_blocks("./csv/GeoLite2-City-Blocks-IPv4.csv")
-            load_blocks("./csv/GeoLite2-City-Blocks-IPv6.csv")
+                execute_values(cur, sql, rows, page_size=5000)
 
 def import_geolite2(db_conn):
     import_networks(db_conn)
