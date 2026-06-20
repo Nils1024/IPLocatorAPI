@@ -31,9 +31,10 @@ public class DataService {
         IPData ipData = new IPData();
 
         try(PreparedStatement statement = dbConnection.getConnection().prepareStatement("""
-                SELECT n.network, n.asn, n.organization, g.country_code, g.city_name, g.latitude, g.longitude, r.abuse_email, r.registry
+                SELECT n.network, a.asn, a.organization, g.country_code, g.city_name, n.latitude, n.longitude, r.abuse_email, r.registry
                 FROM networks n
-                LEFT JOIN geolocation g USING(network)
+                LEFT JOIN geolocations g USING(geoname_id)
+                LEFT JOIN asn a USING(network)
                 LEFT JOIN rdap_networks r USING(network)
                 WHERE inet(?::inet) <<= network
                 ORDER BY masklen(n.network) DESC
