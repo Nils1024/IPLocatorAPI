@@ -1,8 +1,6 @@
+import io
 import sys
 import threading
-
-from psycopg2.extras import execute_values
-
 import csv
 import psycopg2
 import os
@@ -41,74 +39,56 @@ def create_schema(db_conn):
 
     db_conn.commit()
 
+def copy_csv_to_table(cur, path, table, db_columns, csv_columns):
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+
+    with open(path, "r", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            writer.writerow([row[col] if row[col] else None for col in csv_columns])
+
+    buffer.seek(0)
+    cur.copy_expert(
+        "COPY %s (%s) FROM STDIN WITH (FORMAT CSV, NULL '')" % (table, ", ".join(db_columns)),
+        buffer
+    )
+
 def import_asn(db_conn):
-    with open("./sql/insert_into_asn.sql", "r", encoding="utf-8") as sql_file:
-        sql = sql_file.read()
+    csv_cols = ("network", "autonomous_system_number", "autonomous_system_organization")
+    db_cols = ("network", "asn", "organization")
 
-        files = [
-            "./csv/GeoLite2-ASN-Blocks-IPv4.csv",
-            "./csv/GeoLite2-ASN-Blocks-IPv6.csv"
-        ]
+    files = [
+        "./csv/GeoLite2-ASN-Blocks-IPv4.csv",
+        "./csv/GeoLite2-ASN-Blocks-IPv6.csv"
+    ]
 
-        with db_conn.cursor() as cur:
-            for path in files:
-                with open(path, "r", encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-
-                    rows = [
-                        (row["network"],
-                         row["autonomous_system_number"],
-                         row["autonomous_system_organization"])
-                        for row in reader
-                    ]
-
-                    execute_values(cur, sql, rows, page_size=5000)
+    with db_conn.cursor() as cur:
+        for path in files:
+            copy_csv_to_table(cur, path, "asn", db_cols, csv_cols)
+    db_conn.commit()
 
 def import_geolocation(db_conn):
-    with open("./sql/insert_into_geolocation.sql", "r", encoding="utf-8") as sql_file:
-        sql = sql_file.read()
+    csv_cols = ("geoname_id", "continent_code", "country_iso_code", "subdivision_1_name", "city_name", "time_zone")
+    db_cols = ("geoname_id", "continent_code", "country_code", "region", "city_name", "time_zone")
 
-        with db_conn.cursor() as cur:
-            with open("./csv/GeoLite2-City-Locations-en.csv", "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                rows = []
-                for row in reader:
-                    rows.append((
-                        int(row["geoname_id"]),
-                        row.get("continent_code") or None,
-                        row.get("country_iso_code") or None,
-                        row.get("subdivision_1_name") or None,
-                        row.get("city_name") or None,
-                        row.get("timezone") or None
-                    ))
+    path = "./csv/GeoLite2-City-Locations-en.csv"
 
-                execute_values(cur, sql, rows, page_size=5000)
+    with db_conn.cursor() as cur:
+        copy_csv_to_table(cur, path, "geolocations", db_cols, csv_cols)
+    db_conn.commit()
 
 def import_networks(db_conn):
-    with open("./sql/insert_into_networks.sql", "r", encoding="utf-8") as sql_file:
-        sql = sql_file.read()
+    cols = ("network", "geoname_id", "postal_code", "latitude", "longitude", "accuracy_radius")
 
-        files = [
-            "./csv/GeoLite2-City-Blocks-IPv4.csv",
-            "./csv/GeoLite2-City-Blocks-IPv6.csv"
-        ]
+    files = [
+        "./csv/GeoLite2-City-Blocks-IPv4.csv",
+        "./csv/GeoLite2-City-Blocks-IPv6.csv"
+    ]
 
-        with db_conn.cursor() as cur:
-            for path in files:
-                with open(path, "r", encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-
-                    rows = [
-                        (row["network"],
-                         int(row["geoname_id"]) if row["geoname_id"] else None,
-                         row["postal_code"] or None,
-                         float(row["latitude"]) if row["latitude"] else None,
-                         float(row["longitude"]) if row["longitude"] else None,
-                         int(row["accuracy_radius"]) if row["accuracy_radius"] else None)
-                        for row in reader
-                    ]
-
-                    execute_values(cur, sql, rows, page_size=5000)
+    with db_conn.cursor() as cur:
+        for path in files:
+            copy_csv_to_table(cur, path, "networks", cols, cols)
+    db_conn.commit()
 
 def import_geolite2(host, database, user, password):
     errors = []
