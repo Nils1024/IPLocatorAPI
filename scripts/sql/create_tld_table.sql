@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS rdap_networks (
+CREATE TABLE IF NOT EXISTS tld (
     tld TEXT PRIMARY KEY,
     registry TEXT
 );

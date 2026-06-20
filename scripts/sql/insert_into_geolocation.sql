@@ -1,8 +1,9 @@
-INSERT INTO geolocation
-(network, country_code, city_name, latitude, longitude)
+INSERT INTO geolocations
+(geoname_id, continent_code, country_code, region, city_name, time_zone)
 VALUES %s
-ON CONFLICT (network) DO UPDATE
-SET country_code = EXCLUDED.country_code,
+ON CONFLICT (geoname_id) DO UPDATE
+SET continent_code = EXCLUDED.continent_code,
+    country_code = EXCLUDED.country_code,
+    region = EXCLUDED.region,
     city_name = EXCLUDED.city_name,
-    latitude = EXCLUDED.latitude,
-    longitude = EXCLUDED.longitude;
+    time_zone = EXCLUDED.time_zone;

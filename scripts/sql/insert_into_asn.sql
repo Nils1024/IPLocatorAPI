@@ -1,4 +1,4 @@
-INSERT INTO networks (network, asn, organization)
+INSERT INTO asn (network, asn, organization)
 VALUES %s
 ON CONFLICT (network) do UPDATE
 SET asn = EXCLUDED.asn,
