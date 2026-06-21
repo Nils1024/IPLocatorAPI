@@ -1,16 +1,20 @@
 package de.nils.iplocatorapi.controllers;
 
+import de.nils.iplocatorapi.common.Const;
 import de.nils.iplocatorapi.daos.IPData;
 import de.nils.iplocatorapi.services.DataService;
+import de.nils.iplocatorapi.utils.IPUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 
+@RequestMapping(Const.ApiPaths.IP)
 @RestController
 public class IpController {
     private final DataService dataService;
@@ -19,29 +23,20 @@ public class IpController {
         this.dataService = dataService;
     }
 
-    @GetMapping("/v1/ip/{ip}")
+    @GetMapping("/{ip}")
     public ResponseEntity<IPData> getIp(@PathVariable String ip) {
-        if(!isValidIp(ip)) {
+        if(!IPUtils.isValidIp(ip)) {
             return ResponseEntity.badRequest().build();
         }
 
         try {
-            return ResponseEntity.ok().body(dataService.getIPData(ip));
+            return ResponseEntity.ok(dataService.getIPData(ip));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private boolean isValidIp(String ip) {
-        try {
-            InetAddress.getByName(ip);
-            return true;
-        } catch(UnknownHostException e) {
-            return false;
-        }
-    }
-
-    @GetMapping("/v1/ip/{ip}/location")
+    @GetMapping("/{ip}/location")
     public String getIpLocation(@PathVariable String ip) {
         return ip;
     }

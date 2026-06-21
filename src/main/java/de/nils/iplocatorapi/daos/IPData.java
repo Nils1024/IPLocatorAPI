@@ -14,6 +14,7 @@ public class IPData {
     private double latitude;
     private double longitude;
     private int accuracy;
+    private String hostname;
 
     public String getIp() {
         return ip;
@@ -117,5 +118,13 @@ public class IPData {
 
     public void setAccuracy(int accuracy) {
         this.accuracy = accuracy;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
     }
 }

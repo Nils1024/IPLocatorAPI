@@ -20,13 +20,13 @@ public class DatabaseConnection {
         String user = System.getenv("IPLocatorAPI_DB_USER");
         String passwd = System.getenv("IPLocatorAPI_DB_PASSWD");
 
-        log.info("Connecting to database <{}> with user <{}>", Const.SQL.url, user);
+        log.info("Connecting to database <{}> with user <{}>", Const.SQL.URL, user);
 
         final Properties properties = new Properties();
         properties.setProperty("user", user);
         properties.setProperty("password", passwd);
 
-        conn = DriverManager.getConnection(Const.SQL.url, properties);
+        conn = DriverManager.getConnection(Const.SQL.URL, properties);
     }
 
     public Connection getConnection() {

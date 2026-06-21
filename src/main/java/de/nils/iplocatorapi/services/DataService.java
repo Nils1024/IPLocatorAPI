@@ -7,10 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -31,7 +32,19 @@ public class DataService {
         IPData ipData = new IPData();
 
         try(PreparedStatement statement = dbConnection.getConnection().prepareStatement("""
-                SELECT n.network, a.asn, a.organization, g.continent_code, g.country_code, g.region, g.city_name, n.postal_code, g.time_zone, n.latitude, n.longitude, n.accuracy_radius
+                SELECT
+                    n.network,
+                    a.asn,
+                    a.organization,
+                    g.continent_code,
+                    g.country_code,
+                    g.region,
+                    g.city_name,
+                    n.postal_code,
+                    g.time_zone,
+                    n.latitude,
+                    n.longitude,
+                    n.accuracy_radius
                 FROM networks n
                 LEFT JOIN geolocations g USING(geoname_id)
                 LEFT JOIN asn a ON inet(?::inet) <<= a.network
@@ -58,6 +71,9 @@ public class DataService {
                     ipData.setLatitude(resultSet.getDouble("latitude"));
                     ipData.setLongitude(resultSet.getDouble("longitude"));
                     ipData.setAccuracy(resultSet.getInt("accuracy_radius"));
+
+                    InetAddress addr = InetAddress.getByName(ip);
+                    ipData.setHostname(addr.getCanonicalHostName());
 
 //                    if(resultSet.getString("registry") == null
 //                        || resultSet.getString("abuse_email") == null)
@@ -98,29 +114,35 @@ public class DataService {
 //                        }
 //                    }
                 }
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
             }
         }
 
         return ipData;
     }
 
-    public DomainData getDomainData(String domain) {
-        return new DomainData();
+    private String getRdapIpData(String ip) {
+        return makeHTTPRequest("https://rdap.org/ip/" + ip);
     }
 
-    private String getRdapIpData(String ip) {
+    private String getWhoisData(String ip) {
+        return ip;
+    }
+
+    private String makeHTTPRequest(String uri) {
         try(HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build())
         {
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://rdap.org/ip/" + ip)).GET().build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(uri)).GET().build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if(response.statusCode() != 200) {
-                log.error("RDAP failed: HTTP {}", response.statusCode());
+                log.error("Request to <{}> failed: HTTP {}", uri, response.statusCode());
             }
 
             return response.body();
         } catch (IOException | InterruptedException e) {
-            log.error("Error getting RDAP Data for ip <{}>", ip, e);
+            log.error("Error requesting Data form <{}>: ", uri, e);
         }
 
         return null;
