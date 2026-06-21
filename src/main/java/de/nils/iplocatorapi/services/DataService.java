@@ -31,66 +31,72 @@ public class DataService {
         IPData ipData = new IPData();
 
         try(PreparedStatement statement = dbConnection.getConnection().prepareStatement("""
-                SELECT n.network, a.asn, a.organization, g.country_code, g.city_name, n.latitude, n.longitude, r.abuse_email, r.registry
+                SELECT n.network, a.asn, a.organization, g.continent_code, g.country_code, g.region, g.city_name, n.postal_code, g.time_zone, n.latitude, n.longitude, n.accuracy_radius
                 FROM networks n
                 LEFT JOIN geolocations g USING(geoname_id)
-                LEFT JOIN asn a USING(network)
-                LEFT JOIN rdap_networks r USING(network)
-                WHERE inet(?::inet) <<= network
+                LEFT JOIN asn a ON inet(?::inet) <<= a.network
+                WHERE inet(?::inet) <<= n.network
                 ORDER BY masklen(n.network) DESC
                 LIMIT 1;
             """)) {
 
             statement.setString(1, ip);
+            statement.setString(2, ip);
 
             try(ResultSet resultSet = statement.executeQuery()) {
                 if(resultSet.next()) {
+                    ipData.setIp(ip);
                     ipData.setNetwork(resultSet.getString("network"));
                     ipData.setAsn(resultSet.getString("asn"));
                     ipData.setOrganization(resultSet.getString("organization"));
+                    ipData.setContinent(resultSet.getString("continent_code"));
                     ipData.setCountry(resultSet.getString("country_code"));
+                    ipData.setRegion(resultSet.getString("region"));
                     ipData.setCity(resultSet.getString("city_name"));
+                    ipData.setPostalCode(resultSet.getString("postal_code"));
+                    ipData.setTimezone(resultSet.getString("time_zone"));
                     ipData.setLatitude(resultSet.getDouble("latitude"));
                     ipData.setLongitude(resultSet.getDouble("longitude"));
+                    ipData.setAccuracy(resultSet.getInt("accuracy_radius"));
 
-                    if(resultSet.getString("registry") == null
-                        || resultSet.getString("abuse_email") == null)
-                    {
-                        String json = getRdapIpData(ip);
-                        ObjectMapper mapper = new ObjectMapper();
-                        JsonNode root = mapper.readTree(json);
-
-                        String network = ipData.getNetwork();
-                        String organization = root.path("name").asText(null);
-                        String handle = root.path("handle").asText(null);
-                        String abuseEmail = extractAbuseEmail(root);
-
-                        ipData.setAbuseEmail(abuseEmail);
-
-                        try(PreparedStatement rdapInsertStatement = dbConnection.getConnection().prepareStatement("""
-                                INSERT INTO rdap_networks (
-                                    network,
-                                    organization,
-                                    handle,
-                                    abuse_email,
-                                    last_refresh
-                                )
-                                VALUES (?::CIDR, ?, ?, ?, NOW())
-                                ON CONFLICT (network)
-                                DO UPDATE SET
-                                   organization = EXCLUDED.organization,
-                                   handle = EXCLUDED.handle,
-                                   abuse_email = EXCLUDED.abuse_email,
-                                   last_refresh = NOW()
-                            """)) {
-                            rdapInsertStatement.setString(1, network);
-                            rdapInsertStatement.setString(2, organization);
-                            rdapInsertStatement.setString(3, handle);
-                            rdapInsertStatement.setString(4, abuseEmail);
-
-                            rdapInsertStatement.executeUpdate();
-                        }
-                    }
+//                    if(resultSet.getString("registry") == null
+//                        || resultSet.getString("abuse_email") == null)
+//                    {
+//                        String json = getRdapIpData(ip);
+//                        ObjectMapper mapper = new ObjectMapper();
+//                        JsonNode root = mapper.readTree(json);
+//
+//                        String network = ipData.getNetwork();
+//                        String organization = root.path("name").asText(null);
+//                        String handle = root.path("handle").asText(null);
+//                        String abuseEmail = extractAbuseEmail(root);
+//
+//                        log.info(json);
+//
+//                        try(PreparedStatement rdapInsertStatement = dbConnection.getConnection().prepareStatement("""
+//                                INSERT INTO rdap_networks (
+//                                    network,
+//                                    organization,
+//                                    handle,
+//                                    abuse_email,
+//                                    last_refresh
+//                                )
+//                                VALUES (?::CIDR, ?, ?, ?, NOW())
+//                                ON CONFLICT (network)
+//                                DO UPDATE SET
+//                                   organization = EXCLUDED.organization,
+//                                   handle = EXCLUDED.handle,
+//                                   abuse_email = EXCLUDED.abuse_email,
+//                                   last_refresh = NOW()
+//                            """)) {
+//                            rdapInsertStatement.setString(1, network);
+//                            rdapInsertStatement.setString(2, organization);
+//                            rdapInsertStatement.setString(3, handle);
+//                            rdapInsertStatement.setString(4, abuseEmail);
+//
+//                            rdapInsertStatement.executeUpdate();
+//                        }
+//                    }
                 }
             }
         }

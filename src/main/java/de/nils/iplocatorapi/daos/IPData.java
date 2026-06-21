@@ -5,28 +5,15 @@ public class IPData {
     private String network;
     private String asn;
     private String organization;
+    private String continent;
     private String country;
+    private String region;
     private String city;
+    private String postalCode;
+    private String timezone;
     private double latitude;
     private double longitude;
-    private String abuseEmail;
-    private String registry;
-
-    public String getAbuseEmail() {
-        return abuseEmail;
-    }
-
-    public void setAbuseEmail(String abuseEmail) {
-        this.abuseEmail = abuseEmail;
-    }
-
-    public String getRegistry() {
-        return registry;
-    }
-
-    public void setRegistry(String registry) {
-        this.registry = registry;
-    }
+    private int accuracy;
 
     public String getIp() {
         return ip;
@@ -60,6 +47,14 @@ public class IPData {
         this.organization = organization;
     }
 
+    public String getContinent() {
+        return continent;
+    }
+
+    public void setContinent(String continent) {
+        this.continent = continent;
+    }
+
     public String getCountry() {
         return country;
     }
@@ -68,12 +63,36 @@ public class IPData {
         this.country = country;
     }
 
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
     public String getCity() {
         return city;
     }
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public void setPostalCode(String postalCode) {
+        this.postalCode = postalCode;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
     }
 
     public double getLatitude() {
@@ -90,5 +109,13 @@ public class IPData {
 
     public void setLongitude(double longitude) {
         this.longitude = longitude;
+    }
+
+    public int getAccuracy() {
+        return accuracy;
+    }
+
+    public void setAccuracy(int accuracy) {
+        this.accuracy = accuracy;
     }
 }
