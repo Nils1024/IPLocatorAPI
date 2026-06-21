@@ -120,6 +120,16 @@ def import_geolite2(host, database, user, password):
             print("Error in <%s>: %s" % (name, error), file=sys.stderr)
         raise RuntimeError("One or more imports failed")
 
+def create_indices(host, database, user, password):
+    conn = connect(host, database, user, password)
+
+    with conn.cursor() as cur:
+        with open("./sql/create_indices.sql", "r", encoding="utf-8") as f:
+            sql = f.read()
+            cur.execute(sql)
+
+    conn.commit()
+
 def main():
     host = os.getenv("IPLocatorAPI_DB_URL")
     database = os.getenv("IPLocatorAPI_DB_NAME")
@@ -139,6 +149,9 @@ def main():
 
     import_geolite2(host, database, user, password)
     print("Geolite2 imported successfully")
+
+    create_indices(host, database, user, password)
+    print("Indices created successfully")
 
 if __name__ == "__main__":
     main()
