@@ -1,6 +1,5 @@
 package de.nils.iplocatorapi.services;
 
-import de.nils.iplocatorapi.daos.DomainData;
 import de.nils.iplocatorapi.daos.IPData;
 import de.nils.iplocatorapi.repository.DatabaseConnection;
 import org.slf4j.Logger;
@@ -8,6 +7,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
@@ -18,6 +23,9 @@ import java.net.http.HttpResponse;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
 
 @Service
 public class DataService {
@@ -72,8 +80,27 @@ public class DataService {
                     ipData.setLongitude(resultSet.getDouble("longitude"));
                     ipData.setAccuracy(resultSet.getInt("accuracy_radius"));
 
-                    InetAddress addr = InetAddress.getByName(ip);
-                    ipData.setHostname(addr.getCanonicalHostName());
+                    Hashtable<String, String> env = new Hashtable<>();
+                    env.put(Context.INITIAL_CONTEXT_FACTORY,
+                            "com.sun.jndi.dns.DnsContextFactory");
+
+                    DirContext ctx = new InitialDirContext(env);
+
+                    Attributes attrs = ctx.getAttributes(
+                            toArpa(ip),
+                            new String[]{"PTR"});
+
+                    Attribute ptrs = attrs.get("PTR");
+
+                    List<String> hostnames = new ArrayList<>();
+
+                    if (ptrs != null) {
+                        for (int i = 0; i < ptrs.size(); i++) {
+                            hostnames.add(ptrs.get(i).toString());
+                        }
+                    }
+
+                    ipData.setHostnames(hostnames);
 
 //                    if(resultSet.getString("registry") == null
 //                        || resultSet.getString("abuse_email") == null)
@@ -114,7 +141,7 @@ public class DataService {
 //                        }
 //                    }
                 }
-            } catch (UnknownHostException e) {
+            } catch (NamingException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -146,6 +173,12 @@ public class DataService {
         }
 
         return null;
+    }
+
+    private String toArpa(String ip) {
+        String[] parts = ip.split("\\.");
+
+        return parts[3] + "." + parts[2] + "." + parts[1] + "." + parts[0] + ".in-addr.arpa";
     }
 
     public String extractAbuseEmail(JsonNode root) {

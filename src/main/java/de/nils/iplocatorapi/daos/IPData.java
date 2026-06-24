@@ -1,5 +1,7 @@
 package de.nils.iplocatorapi.daos;
 
+import java.util.List;
+
 public class IPData {
     private String ip;
     private String network;
@@ -14,7 +16,7 @@ public class IPData {
     private double latitude;
     private double longitude;
     private int accuracy;
-    private String hostname;
+    private List<String> hostnames;
 
     public String getIp() {
         return ip;
@@ -120,11 +122,11 @@ public class IPData {
         this.accuracy = accuracy;
     }
 
-    public String getHostname() {
-        return hostname;
+    public List<String> getHostnames() {
+        return hostnames;
     }
 
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
+    public void setHostnames(List<String> hostnames) {
+        this.hostnames = hostnames;
     }
 }
