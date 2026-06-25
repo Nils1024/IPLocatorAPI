@@ -1,20 +1,23 @@
 package de.nils.iplocatorapi.services;
 
+import de.nils.iplocatorapi.common.Const;
+import de.nils.iplocatorapi.daos.DomainData;
 import de.nils.iplocatorapi.daos.IPData;
 import de.nils.iplocatorapi.repository.DatabaseConnection;
+import de.nils.iplocatorapi.utils.DomainUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
 import javax.naming.Context;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpClient;
@@ -23,44 +26,34 @@ import java.net.http.HttpResponse;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class DataService {
     private static final Logger log = LoggerFactory.getLogger(DataService.class);
     private final DatabaseConnection dbConnection;
+    private final List<String> resolvers = new ArrayList<>();
+    private final String[] records = new String[]{
+        "A",
+        "AAAA",
+        "MX",
+        "TXT",
+        "NS",
+        "CNAME"
+    };
 
     public DataService(DatabaseConnection dbConnection) {
         this.dbConnection = dbConnection;
+
+        resolvers.add("dns://8.8.8.8/");
+        resolvers.add("dns://1.1.1.1/");
+        resolvers.add("dns://9.9.9.9/");
     }
 
     public IPData getIPData(String ip) throws SQLException {
         IPData ipData = new IPData();
 
-        try(PreparedStatement statement = dbConnection.getConnection().prepareStatement("""
-                SELECT
-                    n.network,
-                    a.asn,
-                    a.organization,
-                    g.continent_code,
-                    g.country_code,
-                    g.region,
-                    g.city_name,
-                    n.postal_code,
-                    g.time_zone,
-                    n.latitude,
-                    n.longitude,
-                    n.accuracy_radius
-                FROM networks n
-                LEFT JOIN geolocations g USING(geoname_id)
-                LEFT JOIN asn a ON inet(?::inet) <<= a.network
-                WHERE inet(?::inet) <<= n.network
-                ORDER BY masklen(n.network) DESC
-                LIMIT 1;
-            """)) {
-
+        try(PreparedStatement statement = dbConnection.getConnection().prepareStatement(Const.SQL.IpDataQuery)) {
             statement.setString(1, ip);
             statement.setString(2, ip);
 
@@ -147,6 +140,50 @@ public class DataService {
         }
 
         return ipData;
+    }
+
+    public DomainData getDomainData(String domain) throws SQLException, UnknownHostException, NamingException {
+        DomainData domainData = new DomainData();
+        domainData.setDomain(domain);
+        domainData.setIpData(getIPData(DomainUtils.resolveIp(domain)));
+
+        for(String resolver : resolvers) {
+            try {
+                domainData.setRecords(getRecordsFromDNS(resolver, domain));
+                break;
+            }
+            catch(NamingException e) {
+                log.error("Failed to get DNS Records: ", e);
+            }
+        }
+
+        return domainData;
+    }
+
+    private Map<String, List<String>> getRecordsFromDNS(String resolver, String domain) throws NamingException {
+        Hashtable<String, String> env = new Hashtable<>();
+        env.put(Context.INITIAL_CONTEXT_FACTORY,
+                "com.sun.jndi.dns.DnsContextFactory"
+        );
+        env.put(Context.PROVIDER_URL, resolver);
+
+        DirContext ctx = new InitialDirContext(env);
+
+        Attributes attributes = ctx.getAttributes(domain, records);
+        NamingEnumeration<? extends Attribute> allRecords =
+                attributes.getAll();
+
+        Map<String, List<String>> records = new HashMap<>();
+        while(allRecords.hasMore()) {
+            Attribute attribute = allRecords.next();
+
+            for(int i = 0; i < attribute.size(); i++) {
+                records.putIfAbsent(attribute.getID(), new ArrayList<>());
+                records.get(attribute.getID()).add((String) attribute.get(i));
+            }
+        }
+
+        return records;
     }
 
     private String getRdapIpData(String ip) {

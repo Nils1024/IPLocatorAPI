@@ -1,13 +1,12 @@
 package de.nils.iplocatorapi.daos;
 
-import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 public class DomainData {
     private String domain;
     private IPData ipData;
-    private LocalDateTime registration_date;
-    private String abuse_email;
-    private String registrar;
+    private Map<String, List<String>> records;
 
     public String getDomain() {
         return domain;
@@ -25,19 +24,11 @@ public class DomainData {
         this.ipData = ipData;
     }
 
-    public String getAbuse_email() {
-        return abuse_email;
+    public Map<String, List<String>> getRecords() {
+        return records;
     }
 
-    public void setAbuse_email(String abuse_email) {
-        this.abuse_email = abuse_email;
-    }
-
-    public String getRegistrar() {
-        return registrar;
-    }
-
-    public void setRegistrar(String registrar) {
-        this.registrar = registrar;
+    public void setRecords(Map<String, List<String>> records) {
+        this.records = records;
     }
 }
