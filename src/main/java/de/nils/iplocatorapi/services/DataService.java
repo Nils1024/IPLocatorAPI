@@ -194,6 +194,10 @@ public class DataService {
         return ip;
     }
 
+    public String getASNRdapData(String asn) {
+        return makeHTTPRequest("https://rdap.apnic.net/autnum/" + asn);
+    }
+
     private String makeHTTPRequest(String uri) {
         try(HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build())
         {

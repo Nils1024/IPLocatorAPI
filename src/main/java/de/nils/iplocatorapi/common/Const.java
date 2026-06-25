@@ -5,6 +5,9 @@ public class Const {
         public static final String BASE_PATH = "/v1";
         public static final String IP = BASE_PATH + "/ip";
         public static final String DOMAIN = BASE_PATH + "/domain";
+        public static final String RESOLVE = BASE_PATH + "/resolve";
+        public static final String TLD = BASE_PATH + "/tld";
+        public static final String ASN = BASE_PATH + "/asn";
     }
 
     public static class SQL {
