@@ -25,6 +25,9 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Source: https://mvnrepository.com/artifact/org.springframework/spring-aspects
+    implementation("org.springframework:spring-aspects:7.0.8")
+
     // Source: https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation 'org.postgresql:postgresql:42.7.11'
 

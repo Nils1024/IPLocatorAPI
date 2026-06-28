@@ -1,3 +1,6 @@
 spring:
   application:
     name: IPLocatorAPI
+
+IPLOCATORAPI_RATE_LIMIT: 3
+IPLOCATORAPI_RATE_DURATION: 60000

@@ -2,6 +2,7 @@ package de.nils.iplocatorapi.controllers;
 
 import de.nils.iplocatorapi.common.Const;
 import de.nils.iplocatorapi.daos.IPData;
+import de.nils.iplocatorapi.security.RateLimitProtection;
 import de.nils.iplocatorapi.services.DataService;
 import de.nils.iplocatorapi.utils.IPUtils;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ public class IpController {
     }
 
     @GetMapping("/{ip}")
+    @RateLimitProtection
     public ResponseEntity<IPData> getIp(@PathVariable String ip) {
         if(!IPUtils.isValidIp(ip)) {
             return ResponseEntity.badRequest().build();

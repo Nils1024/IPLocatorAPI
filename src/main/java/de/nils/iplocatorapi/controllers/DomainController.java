@@ -3,6 +3,7 @@ package de.nils.iplocatorapi.controllers;
 import de.nils.iplocatorapi.common.Const;
 import de.nils.iplocatorapi.daos.DomainData;
 import de.nils.iplocatorapi.daos.IPData;
+import de.nils.iplocatorapi.security.RateLimitProtection;
 import de.nils.iplocatorapi.services.DataService;
 import de.nils.iplocatorapi.utils.DomainUtils;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class DomainController {
     }
 
     @GetMapping("/{domain}")
+    @RateLimitProtection
     public ResponseEntity<DomainData> getDomain(@PathVariable String domain) {
         if(!DomainUtils.isValidDomain(domain)) {
             return ResponseEntity.badRequest().build();

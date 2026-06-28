@@ -1,6 +1,7 @@
 package de.nils.iplocatorapi.controllers;
 
 import de.nils.iplocatorapi.common.Const;
+import de.nils.iplocatorapi.security.RateLimitProtection;
 import de.nils.iplocatorapi.services.DataService;
 import de.nils.iplocatorapi.utils.DomainUtils;
 import de.nils.iplocatorapi.utils.IPUtils;
@@ -24,6 +25,7 @@ public class ResolveController {
     }
 
     @GetMapping()
+    @RateLimitProtection
     public Object getResolve(@RequestParam String query) {
         try {
             if(IPUtils.isValidIp(query))
