@@ -4,6 +4,8 @@ import threading
 import csv
 import psycopg2
 import os
+import json
+from urllib.request import urlopen, Request
 
 def connect(host, database, user, password):
     return psycopg2.connect(
@@ -120,6 +122,84 @@ def import_geolite2(host, database, user, password):
             print("Error in <%s>: %s" % (name, error), file=sys.stderr)
         raise RuntimeError("One or more imports failed")
 
+def import_tld_data(host, database, user, password):
+    conn = connect(host, database, user, password)
+
+    try:
+        tlds = _fetch_iana_tld_list()
+        print(f"Fetched {len(tlds)} TLDs from IANA list")
+
+        with conn.cursor() as cur:
+            for tld in sorted(tlds):
+                cur.execute(
+                    "INSERT INTO tld (tld) VALUES (%s) ON CONFLICT (tld) DO NOTHING",
+                    (tld,)
+                )
+        conn.commit()
+        print(f"Inserted {len(tlds)} TLDs")
+
+        # 2. RDAP- und WHOIS-Server-URLs ergänzen
+        rdap_map = _fetch_iana_rdap_bootstrap()
+        print(f"Fetched RDAP data for {len(rdap_map)} TLDs")
+
+        count = 0
+        with conn.cursor() as cur:
+            for tld, rdap_url in rdap_map.items():
+                whois_url = rdap_url.replace("https://", "whois://").rstrip("/")
+                cur.execute(
+                    """UPDATE tld SET
+                        rdap_server_url  = %s,
+                        whois_server_url = %s
+                     WHERE tld = %s""",
+                    (rdap_url, whois_url, tld)
+                )
+                if cur.rowcount > 0:
+                    count += 1
+
+        conn.commit()
+        print(f"Updated {count} TLDs with RDAP server URLs")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"TLD import failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        conn.close()
+
+def _fetch_iana_rdap_bootstrap() -> dict:
+    url = "https://data.iana.org/rdap/dns.json"
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+
+    with urlopen(req, timeout=30) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+
+    result = {}
+    for service in data.get("services", []):
+        if len(service) != 2:
+            continue
+        tld_entries, server_list = service
+        if not server_list:
+            continue
+        rdap_url = server_list[0].rstrip("/")
+        for tld in tld_entries:
+            normalized = ("." + tld.lower()) if not tld.startswith(".") else tld.lower()
+            result[normalized] = rdap_url
+
+    return result
+
+def _fetch_iana_tld_list() -> set:
+    url = "https://data.iana.org/TLD/tlds-alpha-by-domain.txt"
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+
+    with urlopen(req, timeout=30) as resp:
+        lines = resp.read().decode("utf-8").splitlines()
+
+    return {
+        "." + line.strip().lower()
+        for line in lines
+        if line.strip() and not line.startswith("#")
+    }
+
 def create_indices(host, database, user, password):
     conn = connect(host, database, user, password)
 
@@ -136,6 +216,10 @@ def main():
     user = os.getenv("IPLocatorAPI_DB_USER")
     password = os.getenv("IPLocatorAPI_DB_PASSWD")
 
+    if not all([host, database, user, password]):
+        print("Error: All DB env vars required (DB_URL, DB_NAME, DB_USER, DB_PASSWD)")
+        sys.exit(1)
+
     print("Connecting to <%s>/<%s> with user <%s>" % (host, database, user))
     conn = connect(host, database, user, password)
     print("Connected to <%s>/<%s> with user <%s>" % (host, database, user))
@@ -149,6 +233,9 @@ def main():
 
     import_geolite2(host, database, user, password)
     print("Geolite2 imported successfully")
+
+    import_tld_data(host, database, user, password)
+    print("TLDs import successfully")
 
     create_indices(host, database, user, password)
     print("Indices created successfully")
