@@ -18,6 +18,6 @@ public class TLDController {
     @GetMapping("/{tld}")
     @RateLimitProtection
     public TLDData getTld(@PathVariable String tld) {
-        return new TLDData();
+        return dataService.getTLDData(tld);
     }
 }

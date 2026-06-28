@@ -4,6 +4,7 @@ import de.nils.iplocatorapi.common.Const;
 import de.nils.iplocatorapi.daos.ASNData;
 import de.nils.iplocatorapi.daos.DomainData;
 import de.nils.iplocatorapi.daos.IPData;
+import de.nils.iplocatorapi.daos.TLDData;
 import de.nils.iplocatorapi.repository.DatabaseConnection;
 import de.nils.iplocatorapi.utils.DomainUtils;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
+import java.net.IDN;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpClient;
@@ -95,45 +97,6 @@ public class DataService {
                     }
 
                     ipData.setHostnames(hostnames);
-
-//                    if(resultSet.getString("registry") == null
-//                        || resultSet.getString("abuse_email") == null)
-//                    {
-//                        String json = getRdapIpData(ip);
-//                        ObjectMapper mapper = new ObjectMapper();
-//                        JsonNode root = mapper.readTree(json);
-//
-//                        String network = ipData.getNetwork();
-//                        String organization = root.path("name").asText(null);
-//                        String handle = root.path("handle").asText(null);
-//                        String abuseEmail = extractAbuseEmail(root);
-//
-//                        log.info(json);
-//
-//                        try(PreparedStatement rdapInsertStatement = dbConnection.getConnection().prepareStatement("""
-//                                INSERT INTO rdap_networks (
-//                                    network,
-//                                    organization,
-//                                    handle,
-//                                    abuse_email,
-//                                    last_refresh
-//                                )
-//                                VALUES (?::CIDR, ?, ?, ?, NOW())
-//                                ON CONFLICT (network)
-//                                DO UPDATE SET
-//                                   organization = EXCLUDED.organization,
-//                                   handle = EXCLUDED.handle,
-//                                   abuse_email = EXCLUDED.abuse_email,
-//                                   last_refresh = NOW()
-//                            """)) {
-//                            rdapInsertStatement.setString(1, network);
-//                            rdapInsertStatement.setString(2, organization);
-//                            rdapInsertStatement.setString(3, handle);
-//                            rdapInsertStatement.setString(4, abuseEmail);
-//
-//                            rdapInsertStatement.executeUpdate();
-//                        }
-//                    }
                 }
             } catch (NamingException e) {
                 throw new RuntimeException(e);
@@ -196,8 +159,21 @@ public class DataService {
     }
 
     public ASNData getASNData(String asn) {
+        ASNData asnData = new ASNData();
+
         // makeHTTPRequest("https://rdap.apnic.net/autnum/" + asn);
-        return new ASNData();
+
+        return asnData;
+    }
+
+    public TLDData getTLDData(String tld) {
+        TLDData tldData = new TLDData();
+
+        String normalized = tld.toLowerCase(Locale.ROOT).replaceAll("^\\.+", "").trim();
+        tldData.setTld("." + normalized);
+        tldData.setPunycode(IDN.toASCII(normalized));
+
+        return tldData;
     }
 
     private String makeHTTPRequest(String uri) {
@@ -222,31 +198,5 @@ public class DataService {
         String[] parts = ip.split("\\.");
 
         return parts[3] + "." + parts[2] + "." + parts[1] + "." + parts[0] + ".in-addr.arpa";
-    }
-
-    public String extractAbuseEmail(JsonNode root) {
-        JsonNode entities = root.path("entities");
-
-        for(JsonNode entity : entities) {
-            JsonNode roles = entity.path("roles");
-
-            for(JsonNode role : roles) {
-                if(role.asText().equals("abuse")) {
-                    JsonNode vcard = entity.path("vcardArray");
-
-                    if(vcard.isArray() && vcard.size() > 1) {
-                        JsonNode fields = vcard.get(1);
-
-                        for(JsonNode field : fields) {
-                            if(field.get(0).asText().equals("email")) {
-                                return field.get(3).asText();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
     }
 }

@@ -5,11 +5,13 @@ package de.nils.iplocatorapi.daos;
  */
 public class ASNData {
     /**
-     *  Autonomous System Number
+     * Autonomous System Number
      */
     private int asn;
     private String organization;
     private String network;
-
+    /**
+     * Regional Internet Registry
+     */
     private String rir;
 }
