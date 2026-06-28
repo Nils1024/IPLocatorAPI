@@ -3,6 +3,9 @@ package de.nils.iplocatorapi.daos;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Domain related data response data access object
+ */
 public class DomainData {
     private String domain;
     private IPData ipData;

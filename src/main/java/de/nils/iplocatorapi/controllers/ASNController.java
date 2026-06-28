@@ -1,6 +1,7 @@
 package de.nils.iplocatorapi.controllers;
 
 import de.nils.iplocatorapi.common.Const;
+import de.nils.iplocatorapi.daos.ASNData;
 import de.nils.iplocatorapi.security.RateLimitProtection;
 import de.nils.iplocatorapi.services.DataService;
 import org.springframework.http.MediaType;
@@ -20,7 +21,7 @@ public class ASNController {
 
     @GetMapping(path = "/{asn}", produces = MediaType.APPLICATION_JSON_VALUE)
     @RateLimitProtection
-    public String getAsn(@PathVariable String asn) {
-        return dataService.getASNRdapData(asn);
+    public ASNData getAsn(@PathVariable String asn) {
+        return dataService.getASNData(asn);
     }
 }

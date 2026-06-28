@@ -1,6 +1,7 @@
 package de.nils.iplocatorapi.services;
 
 import de.nils.iplocatorapi.common.Const;
+import de.nils.iplocatorapi.daos.ASNData;
 import de.nils.iplocatorapi.daos.DomainData;
 import de.nils.iplocatorapi.daos.IPData;
 import de.nils.iplocatorapi.repository.DatabaseConnection;
@@ -194,8 +195,9 @@ public class DataService {
         return ip;
     }
 
-    public String getASNRdapData(String asn) {
-        return makeHTTPRequest("https://rdap.apnic.net/autnum/" + asn);
+    public ASNData getASNData(String asn) {
+        // makeHTTPRequest("https://rdap.apnic.net/autnum/" + asn);
+        return new ASNData();
     }
 
     private String makeHTTPRequest(String uri) {

@@ -2,6 +2,9 @@ package de.nils.iplocatorapi.daos;
 
 import java.util.List;
 
+/**
+ * Internet protocol related data response data access object
+ */
 public class IPData {
     private String ip;
     private String network;
