@@ -1,13 +1,23 @@
 # IPLocatorAPI
-API for getting information about an IP, Domain, ASN or TLD
+IP Locator is an API to get information about IP-Addresses, Domains, TLDs or ASNs.
 
-You can try it using on https://ipapi.nilsb.tech/ or https://ip.nilsb.tech/ with a user friendly UI
+> [!NOTE]
+> Only IPv4 is supported and my DNS Server cannot find every domain atm
 
-## Endpoints
+## Demo
+You can try it on https://ipapi.nilsb.tech/
+
+### Endpoints
 - /v1/ip/{ip}
 - /v1/domain/{domain}
 - /v1/tld/{tld}
 - /v1/asn/{asn}
+
+## Other projects using this API
+I also created a slackbot and a website that use this API:
+
+- https://github.com/Nils1024/IPLocatorWebsite
+- https://github.com/Nils1024/IPLocatorSlackBot
 
 ## How to deploy it by yourself?
 1. Setup a PostgreSQL database
@@ -28,3 +38,6 @@ You can try it using on https://ipapi.nilsb.tech/ or https://ip.nilsb.tech/ with
 7. Move the .jar file from build/libs/ to your server
 8. Make sure Java is installed
 9. Run the jar
+
+## AI declaration
+I used AI to get started on how to get information on ip-addresses. I also used the JetBrains auto completion but at some point these suggestions were horrible. On this project I also used Codex with a local run Qwen3.6 35b model but he made so many unnecessary changes that I ended up cleaning his mess up longer than I probably needed to code this by myself.
